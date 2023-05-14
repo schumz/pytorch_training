@@ -1,3 +1,3 @@
-# Pytorch_training
+# Pytorch_training 
 
 Voici les liste des notebooks de la formations pytorch
