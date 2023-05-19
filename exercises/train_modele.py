@@ -1,3 +1,6 @@
+import torch
+from torch import nn
+
 
 def train_step(model:nn.Module,loss_fn:nn.Module,optimizer:torch.optim,device,dataloader:torch.utils.data.DataLoader):
 
