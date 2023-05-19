@@ -3,9 +3,9 @@
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import torch
-
-train_path=images_path / "train"
-test_path=images_path/ "test"
+import os 
+from torch import nn
+import torch.utils.data
 
 
 def make_dataloader(train_path,test_path,transformer,batch_size):
@@ -28,7 +28,6 @@ def make_dataloader(train_path,test_path,transformer,batch_size):
                         shuffle=True,
                         num_workers=os.cpu_count())
     
-    return train_dl, test_dl
+    
+    return train_dl, test_dl, trainset.classes
 
-from torch import nn
-import torch.utils.data
