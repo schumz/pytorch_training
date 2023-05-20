@@ -3,7 +3,7 @@ from torch import nn
 
 
 def train_step(model:nn.Module,loss_fn:nn.Module,optimizer:torch.optim,device,dataloader:torch.utils.data.DataLoader):
-
+    model = model.to(device)
     model.train()
     
     train_loss = 0
@@ -14,7 +14,7 @@ def train_step(model:nn.Module,loss_fn:nn.Module,optimizer:torch.optim,device,da
         x = x.to(device)
         y = y.to(device)
 
-        pred = model(x)
+        pred = model(x.to(device))
 
         loss=loss_fn(pred,y)
         train_loss += loss.item()
@@ -59,15 +59,16 @@ def test_step(model:nn.Module,loss_fn,device,dataloader):
     return test_loss, test_acc
 
 
-def train(model,train_dataloader,test_dataloader,device,optimizer,loss_fn,epochs):
-
+def train(model,train_dataloader,test_dataloader,device,optimizer,loss_fn,epochs,writer):
+    import mlflow
     from tqdm.auto import tqdm
+    mlflow.set_tracking_uri("http://localhost:5000")
     for epoch in tqdm(range(epochs)):
 
-        results={"train_loss": [],
-               "train_acc": [],
-               "test_loss": [],
-               "test_acc": []}
+        results={"train_loss": 0,
+               "train_acc": 0,
+               "test_loss": 0,
+               "test_acc": 0}
 
         train_loss,train_acc=train_step(model=model,
                                         dataloader=train_dataloader,
@@ -91,10 +92,27 @@ def train(model,train_dataloader,test_dataloader,device,optimizer,loss_fn,epochs
         )
 
         # Update results dictionary
-        results["train_loss"].append(train_loss)
-        results["train_acc"].append(train_acc)
-        results["test_loss"].append(test_loss)
-        results["test_acc"].append(test_acc)
+        results["train_loss"] = train_loss
+        results["train_acc"] = train_acc
+        results["test_loss"] = test_loss
+        results["test_acc"] = test_acc
 
+        mlflow.log_metrics(results,step=epoch)
+
+        if writer:
+            writer.add_scalar("train_loss", train_loss, epoch)
+            writer.add_scalar("train_acc", train_acc, epoch)
+            writer.add_scalar("test_loss", test_loss, epoch)
+            writer.add_scalar("test_acc", test_acc, epoch)
+
+    if writer:
+        # Get the log directory from the writer
+        log_dir = writer.log_dir
+
+        # Log the entire model
+        mlflow.pytorch.log_model(model, "model")
+
+        # Log the writer's log directory as an artifact
+        mlflow.log_artifact(log_dir, artifact_path="tensorboard_logs")
 
     return results
